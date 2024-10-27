@@ -1,7 +1,22 @@
-﻿namespace PDF_API.Models {
-    public class UploadHandler {
+﻿using iText.Kernel.Pdf;
+using System.Reflection.PortableExecutable;
 
-        public string Upload(IFormFile file) {
+namespace PDF_API.Models {
+    public class MyPDF {
+        public static PdfDocument ReadPdfFile(string fileName) {
+            string path = Path.Combine(Directory.GetCurrentDirectory(), "Uploads");
+
+            var reader = new PdfReader(Path.Combine(path, fileName));
+            var pdfDocument = new PdfDocument(reader);
+
+            return pdfDocument;
+        }
+
+        public static void DeletePage(int pageNumber) {
+
+        }
+
+        public static string Upload(IFormFile file) {
             List<string> validExtensions = new List<string>() { ".pdf" };
 
             string extention = Path.GetExtension(file.FileName);

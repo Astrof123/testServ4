@@ -6,12 +6,13 @@ using PDF_API.Models;
 namespace PDF_API.Controllers {
     [Route("api/[controller]")]
     [ApiController]
-    public class PDF : ControllerBase {
+    public class PDFController : ControllerBase {
 
         [HttpPost]
-        //[DisableCors]
-        public IActionResult Negr(IFormFile file) {
-            return Ok(new UploadHandler().Upload(file));
+        public IActionResult UploadFile(IFormFile file) {
+            return Ok(MyPDF.Upload(file));
         }
+
+
     }
 }
