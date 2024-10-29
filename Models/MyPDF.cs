@@ -1,5 +1,6 @@
 ﻿using iText.Kernel.Pdf;
 using Microsoft.AspNetCore.Components.Forms;
+using System.Diagnostics;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 
@@ -7,12 +8,12 @@ namespace PDF_API.Models {
     public class MyPDF {
         public static List<string> validExtensions = new List<string>() { ".pdf" };
 
-        public static string GetPath(string fileName) {
+        public static string GetUploadPath(string fileName) {
             return Path.Combine(Directory.GetCurrentDirectory(), "Uploads", fileName);
         }
 
         public static string GetEditPath(string fileName) {
-            return Path.Combine(Directory.GetCurrentDirectory(), "Uploads", "d" + fileName);
+            return Path.Combine(Directory.GetCurrentDirectory(), "Uploads", "Edited" + fileName);
         }
 
         public static PdfDocument ReadPdfFile(string path) {
@@ -28,12 +29,10 @@ namespace PDF_API.Models {
                 return false;
             }
             
-            string sourceFile = inputFilePath;
-            string targetFile = outputFilePath;
             int[] pagesToDelete = { pageNumber };
 
-            using (var pdfReader = new PdfReader(sourceFile))
-            using (var pdfWriter = new PdfWriter(targetFile)) {
+            using (var pdfReader = new PdfReader(inputFilePath))
+            using (var pdfWriter = new PdfWriter(outputFilePath)) {
                 using (var pdfDocument = new PdfDocument(pdfReader, pdfWriter)) {
                     int deleted = 0;
                     foreach (var i in pagesToDelete) {
@@ -45,6 +44,34 @@ namespace PDF_API.Models {
 
             return true;
         }
+
+        public static bool SwapPages(string inputFilePath, string outputFilePath, int pageFromSwap, int pageToSwap) {
+            List<int> pages = new List<int>();
+
+
+            using (var inputPdfDocument = ReadPdfFile(inputFilePath)) {
+                using (var pdfWriter = new PdfWriter(outputFilePath)) {
+                    using (var outputPdfDocument = new PdfDocument(pdfWriter)) {
+                        if (pageFromSwap < 1 || pageToSwap < 1 || pageFromSwap > inputPdfDocument.GetNumberOfPages()
+                            || pageToSwap > inputPdfDocument.GetNumberOfPages()) {
+                            return false;
+                        }
+
+                        for (int i = 1; i <= inputPdfDocument.GetNumberOfPages(); i++) {
+                            pages.Add(i);
+                        }
+
+                        pages[pageFromSwap - 1] = pageToSwap;
+                        pages[pageToSwap - 1] = pageFromSwap;
+
+                        inputPdfDocument.CopyPagesTo(pages, outputPdfDocument);
+                    }
+                }
+            }
+
+            return true;
+        }      
+
 
         public static string CanBeUpload(IFormFile file) {
             string extention = Path.GetExtension(file.FileName);

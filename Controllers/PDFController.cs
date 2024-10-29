@@ -19,7 +19,7 @@ namespace PDF_API.Controllers {
             if (MyPDF.CanBeUpload(fileToUpload) == "Success") {
 
                 string fileName = MyPDF.Upload(fileToUpload);
-                string inputFilePath = MyPDF.GetPath(fileName);
+                string inputFilePath = MyPDF.GetUploadPath(fileName);
                 var file = MyPDF.ReadPdfFile(inputFilePath);
 
                 string outputFilePath = MyPDF.GetEditPath(fileName);
@@ -39,5 +39,30 @@ namespace PDF_API.Controllers {
                 return BadRequest("This file cannot be processed");
             }
         }
+
+        [HttpPost("SwapPages")]
+        public ActionResult SwapPages(IFormFile fileToUpload, int pageFromSwap, int pageToSwap) {
+            if (MyPDF.CanBeUpload(fileToUpload) == "Success") {
+
+                string fileName = MyPDF.Upload(fileToUpload);
+                string inputFilePath = MyPDF.GetUploadPath(fileName);
+
+                string outputFilePath = MyPDF.GetEditPath(fileName);
+                if (!MyPDF.SwapPages(inputFilePath, outputFilePath, pageFromSwap, pageToSwap)) {
+                    return BadRequest("Incorrect file page selected");
+                }
+
+                byte[] fileBytes = System.IO.File.ReadAllBytes(outputFilePath);
+
+                MyPDF.DeleteFile(inputFilePath);
+                MyPDF.DeleteFile(outputFilePath);
+
+                return File(fileBytes, "application/pdf", "returned.pdf");
+            }
+            else {
+                return BadRequest("This file cannot be processed");
+            }
+        }
+
     }
 }
