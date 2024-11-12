@@ -7,33 +7,65 @@ using System.Reflection.PortableExecutable;
 namespace PDF_API.Models {
     public class MyPDF {
         public static List<string> validExtensions = new List<string>() { ".pdf" };
+        public string fileName1;
+        public string inputFilePath1;
+        public string inputFilePath2 = "";
+        public string outputFilePath;
+        public int countUploadedDocuments;
+        public string fileName2 = "";
 
-        public static string GetUploadPath(string fileName) {
+        public MyPDF(IFormFile fileToUpload1) {
+            fileName1 = Upload(fileToUpload1);
+            inputFilePath1 = GetUploadPath(fileName1);
+            outputFilePath = GetEditPath(fileName1);
+            countUploadedDocuments = 1;
+        }
+
+        public MyPDF(IFormFile fileToUpload1, IFormFile fileToUpload2) {
+            fileName1 = Upload(fileToUpload1);
+            fileName2 = Upload(fileToUpload2);
+            inputFilePath1 = GetUploadPath(fileName1);
+            inputFilePath2 = GetUploadPath(fileName2);
+            outputFilePath = GetEditPath(fileName1);
+            countUploadedDocuments = 2;
+        }
+
+        public string getOutputFilePath() {
+            return outputFilePath;
+        }
+
+
+
+        public string GetUploadPath(string fileName) {
             return Path.Combine(Directory.GetCurrentDirectory(), "Uploads", fileName);
         }
 
-        public static string GetEditPath(string fileName) {
+        public string GetEditPath(string fileName) {
             return Path.Combine(Directory.GetCurrentDirectory(), "Uploads", "Edited" + fileName);
         }
 
-        public static PdfDocument ReadPdfFile(string path) {
-            var reader = new PdfReader(path);
-
-            var pdfDocument = new PdfDocument(reader);
-
-            return pdfDocument;
+        public void Clear() {
+            if (countUploadedDocuments == 1) {
+                DeleteFile(inputFilePath1);
+                DeleteFile(outputFilePath);
+            }
+            else if (countUploadedDocuments == 2) {
+                DeleteFile(inputFilePath1);
+                DeleteFile(inputFilePath2);
+                DeleteFile(outputFilePath);
+            }
         }
 
-        public static bool DeletePage(PdfDocument pdf_file, string inputFilePath, string outputFilePath, int pageNumber) {
-            if (pageNumber < 1 || pageNumber > pdf_file.GetNumberOfPages()) {
-                return false;
-            }
-            
+        public bool DeletePage(int pageNumber) {
             int[] pagesToDelete = { pageNumber };
 
-            using (var pdfReader = new PdfReader(inputFilePath))
+            using (var pdfReader = new PdfReader(inputFilePath1))
             using (var pdfWriter = new PdfWriter(outputFilePath)) {
                 using (var pdfDocument = new PdfDocument(pdfReader, pdfWriter)) {
+                    if (pageNumber < 1 || pageNumber > pdfDocument.GetNumberOfPages()) {
+                        return false;
+                    }
+
                     int deleted = 0;
                     foreach (var i in pagesToDelete) {
                         pdfDocument.RemovePage(i - deleted);
@@ -45,11 +77,11 @@ namespace PDF_API.Models {
             return true;
         }
 
-        public static bool SwapPages(string inputFilePath, string outputFilePath, int pageFromSwap, int pageToSwap) {
+        public bool SwapPages(int pageFromSwap, int pageToSwap) {
             List<int> pages = new List<int>();
 
-
-            using (var inputPdfDocument = ReadPdfFile(inputFilePath)) {
+            var pdfReader = new PdfReader(inputFilePath1);
+            using (var inputPdfDocument = new PdfDocument(pdfReader)) {
                 using (var pdfWriter = new PdfWriter(outputFilePath)) {
                     using (var outputPdfDocument = new PdfDocument(pdfWriter)) {
                         if (pageFromSwap < 1 || pageToSwap < 1 || pageFromSwap > inputPdfDocument.GetNumberOfPages()
@@ -70,7 +102,7 @@ namespace PDF_API.Models {
             }
 
             return true;
-        }      
+        }
 
 
         public static string CanBeUpload(IFormFile file) {
@@ -107,6 +139,41 @@ namespace PDF_API.Models {
             if (File.Exists(filePath)) {
                 File.Delete(filePath);
             }
+        }
+
+        public bool CombineFiles() {
+
+            if (countUploadedDocuments != 2) {
+                return false;
+            }
+
+            using (var pdfReader = new PdfReader(inputFilePath1))
+            using (var pdfReader2 = new PdfReader(inputFilePath2))
+            using (var inputPdfDocument1 = new PdfDocument(pdfReader)) {
+                using (var inputPdfDocument2 = new PdfDocument(pdfReader2)) {
+                    using (var pdfWriter = new PdfWriter(outputFilePath)) {
+                        using (var outputPdfDocument = new PdfDocument(pdfWriter)) {
+                            List<int> pages = new List<int>();
+
+                            for (int i = 1; i <= inputPdfDocument1.GetNumberOfPages(); i++) {
+                                pages.Add(i);
+                            }
+
+                            inputPdfDocument1.CopyPagesTo(pages, outputPdfDocument);
+
+                            pages = new List<int>();
+
+                            for (int i = 1; i <= inputPdfDocument2.GetNumberOfPages(); i++) {
+                                pages.Add(i);
+                            }
+
+                            inputPdfDocument2.CopyPagesTo(pages, outputPdfDocument);
+                        }
+                    }
+                }
+            }
+
+            return true;
         }
     }
 }

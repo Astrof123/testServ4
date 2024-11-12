@@ -17,21 +17,14 @@ namespace PDF_API.Controllers {
         [HttpPost("DeletePage")]
         public ActionResult DeletePage(IFormFile fileToUpload, int pageNumber) {
             if (MyPDF.CanBeUpload(fileToUpload) == "Success") {
+                var mypdf = new MyPDF(fileToUpload);
 
-                string fileName = MyPDF.Upload(fileToUpload);
-                string inputFilePath = MyPDF.GetUploadPath(fileName);
-                var file = MyPDF.ReadPdfFile(inputFilePath);
-
-                string outputFilePath = MyPDF.GetEditPath(fileName);
-                if (!MyPDF.DeletePage(file, inputFilePath, outputFilePath, pageNumber)) {
+                if (!mypdf.DeletePage(pageNumber)) {
                     return BadRequest("Incorrect file page selected");
                 }
 
-                file.Close();
-                byte[] fileBytes = System.IO.File.ReadAllBytes(outputFilePath);
-
-                MyPDF.DeleteFile(inputFilePath);
-                MyPDF.DeleteFile(outputFilePath);
+                byte[] fileBytes = System.IO.File.ReadAllBytes(mypdf.getOutputFilePath());
+                mypdf.Clear();
 
                 return File(fileBytes, "application/pdf", "returned.pdf");
             }
@@ -43,19 +36,14 @@ namespace PDF_API.Controllers {
         [HttpPost("SwapPages")]
         public ActionResult SwapPages(IFormFile fileToUpload, int pageFromSwap, int pageToSwap) {
             if (MyPDF.CanBeUpload(fileToUpload) == "Success") {
+                var mypdf = new MyPDF(fileToUpload);
 
-                string fileName = MyPDF.Upload(fileToUpload);
-                string inputFilePath = MyPDF.GetUploadPath(fileName);
-
-                string outputFilePath = MyPDF.GetEditPath(fileName);
-                if (!MyPDF.SwapPages(inputFilePath, outputFilePath, pageFromSwap, pageToSwap)) {
+                if (!mypdf.SwapPages(pageFromSwap, pageToSwap)) {
                     return BadRequest("Incorrect file page selected");
                 }
 
-                byte[] fileBytes = System.IO.File.ReadAllBytes(outputFilePath);
-
-                MyPDF.DeleteFile(inputFilePath);
-                MyPDF.DeleteFile(outputFilePath);
+                byte[] fileBytes = System.IO.File.ReadAllBytes(mypdf.getOutputFilePath());
+                mypdf.Clear();
 
                 return File(fileBytes, "application/pdf", "returned.pdf");
             }
@@ -64,5 +52,24 @@ namespace PDF_API.Controllers {
             }
         }
 
+        [HttpPost("CombinePdfFiles")]
+        public ActionResult CombinePdfFiles(IFormFile fileToUpload1, IFormFile fileToUpload2) {
+            if (MyPDF.CanBeUpload(fileToUpload1) == "Success" && MyPDF.CanBeUpload(fileToUpload2) == "Success") {
+                var mypdf = new MyPDF(fileToUpload1, fileToUpload2);
+
+
+                if (!mypdf.CombineFiles()) {
+                    return BadRequest("Combine files failed");
+                }
+
+                byte[] fileBytes = System.IO.File.ReadAllBytes(mypdf.getOutputFilePath());
+                mypdf.Clear();
+
+                return File(fileBytes, "application/pdf", "returned.pdf");
+            }
+            else {
+                return BadRequest("This file cannot be processed");
+            }
+        }
     }
 }
