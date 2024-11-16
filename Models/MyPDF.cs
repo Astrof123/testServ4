@@ -1,7 +1,13 @@
-﻿using iText.IO.Image;
+﻿using iText.IO.Font.Constants;
+using iText.IO.Image;
+using iText.Kernel.Colors;
+using iText.Kernel.Font;
 using iText.Kernel.Pdf;
+using iText.Kernel.Pdf.Canvas;
 using iText.Layout;
 using iText.Layout.Element;
+using iText.Layout.Properties;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace PDF_API.Models {
     public class MyPDF {
@@ -180,27 +186,59 @@ namespace PDF_API.Models {
             }
         }
 
-        public void InsertImage(MyImage image, int numberPageToInsert, float width, float height, int x, int y) {
+        public void InsertImage(MyImage image, int pageNumberToInsert, int x, int y) {
             using (var inputPdfDocument = new PdfDocument(new PdfReader(inputFilePath1), new PdfWriter(outputFilePath))) {
                 using (var document = new Document(inputPdfDocument)) {
-                    var pagePageSize = inputPdfDocument.GetPage(numberPageToInsert).GetPageSize();
+                    var pagePageSize = inputPdfDocument.GetPage(pageNumberToInsert).GetPageSize();
 
                     if (y < 0 || y > pagePageSize.GetHeight() || x < 0 || x > pagePageSize.GetWidth()) {
                         throw new PDFException("The coordinates specified are outside the page.");
                     }
 
-                    if (height < 0 || height > pagePageSize.GetHeight() || width < 0 || width > pagePageSize.GetWidth()) {
+                    if (image.height < 0 || image.height > pagePageSize.GetHeight() || image.width < 0 || image.width > pagePageSize.GetWidth()) {
                         throw new PDFException("Dimensions are beyond the page.");
                     }
 
-                    if (numberPageToInsert < 1 || numberPageToInsert > inputPdfDocument.GetNumberOfPages()) {
+                    if (pageNumberToInsert < 1 || pageNumberToInsert > inputPdfDocument.GetNumberOfPages()) {
                         throw new PDFException("The page specified is outside the scope of the document.");
                     }
 
                     ImageData imageData = ImageDataFactory.Create(image.GetPath());
 
-                    Image newImage = new Image(imageData).ScaleAbsolute(width, height).SetFixedPosition(numberPageToInsert, x, y);
+                    Image newImage = new Image(imageData).ScaleAbsolute(image.width, image.height).SetFixedPosition(pageNumberToInsert, x, pagePageSize.GetHeight() - y);
                     document.Add(newImage);
+                }
+            }
+        }
+
+        public void RotatePages(int degrees) {
+            using (var pdfDocument = new PdfDocument(new PdfReader(inputFilePath1), new PdfWriter(outputFilePath))) {
+                for (int i = 1; i <= pdfDocument.GetNumberOfPages(); i++) {
+                    var page = pdfDocument.GetPage(i);
+                    page.SetRotation(degrees);
+                }
+            }
+        }
+
+        public void AddText(int pageNumber, int x, int y) {
+            using (var pdfDocument = new PdfDocument(new PdfReader(inputFilePath1), new PdfWriter(outputFilePath))) {
+                PdfFont code = PdfFontFactory.CreateFont(StandardFonts.COURIER);
+
+                Style style = new Style()
+                    .SetFont(code)
+                    .SetFontSize(14)
+                    .SetFontColor(ColorConstants.RED)
+                    .SetBackgroundColor(ColorConstants.LIGHT_GRAY);
+
+                Paragraph paragraph = new Paragraph()
+                    .Add("In this example, named ")
+                    .Add(new Text("HelloWorldStyles").AddStyle(style))
+                    .Add(", we experiment with some text in ")
+                    .Add(new Text("code style").AddStyle(style))
+                    .Add(".");
+
+                using (Document document = new Document(pdfDocument)) {
+                    document.ShowTextAligned(paragraph, x, y, pageNumber, TextAlignment.LEFT, VerticalAlignment.BOTTOM, 0);
                 }
             }
         }

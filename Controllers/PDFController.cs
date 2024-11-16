@@ -92,12 +92,47 @@ namespace PDF_API.Controllers {
         }
 
         [HttpPost("InsertImage")]
-        public ActionResult InsertImage(IFormFile pdfFileToUpload, IFormFile imageFileToUpload, int numberPageToInsert, float width, float height, int x, int y) {
+        public ActionResult InsertImage(IFormFile pdfFileToUpload, IFormFile imageFileToUpload, int pageNumberToInsert, float width, float height, int x, int y) {
             try {
                 var mypdf = new MyPDF(pdfFileToUpload);
-                var myimage = new MyImage(imageFileToUpload);
+                var myimage = new MyImage(imageFileToUpload, width, height);
 
-                mypdf.InsertImage(myimage, numberPageToInsert, width, height, x, y);
+                mypdf.InsertImage(myimage, pageNumberToInsert, x, y);
+
+                byte[] fileBytes = System.IO.File.ReadAllBytes(mypdf.getOutputFilePath());
+                mypdf.Clear();
+
+                return File(fileBytes, "application/pdf", "returned.pdf");
+            }
+            catch (PDFException e) {
+                return BadRequest(e.Message);
+            }
+        }
+
+        [HttpPost("RotatePages")]
+        public ActionResult RotatePages(IFormFile fileToUpload, int degrees) {
+            try {
+                var mypdf = new MyPDF(fileToUpload);
+
+                mypdf.RotatePages(degrees);
+
+                byte[] fileBytes = System.IO.File.ReadAllBytes(mypdf.getOutputFilePath());
+                mypdf.Clear();
+
+                return File(fileBytes, "application/pdf", "returned.pdf");
+            }
+            catch (PDFException e) {
+                return BadRequest(e.Message);
+            }
+        }
+
+
+        [HttpPost("AddText")]
+        public ActionResult AddText(IFormFile fileToUpload, int pageNumber, int x, int y) {
+            try {
+                var mypdf = new MyPDF(fileToUpload);
+
+                mypdf.AddText(pageNumber, x, y);
 
                 byte[] fileBytes = System.IO.File.ReadAllBytes(mypdf.getOutputFilePath());
                 mypdf.Clear();
