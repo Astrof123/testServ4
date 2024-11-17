@@ -7,6 +7,8 @@ using iText.Layout;
 using iText.Layout.Element;
 using iText.Layout.Properties;
 using System.Drawing;
+using iText.Kernel.Geom;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace PDF_API.Models {
     public class MyPDF {
@@ -17,7 +19,7 @@ namespace PDF_API.Models {
         public string inputFilePath2 = "";
         public string outputFilePath;
         public int countUploadedDocuments;
-        public static string uploadFolder = Path.Combine(Directory.GetCurrentDirectory(), "Uploads", "pdf");
+        public static string uploadFolder = System.IO.Path.Combine(Directory.GetCurrentDirectory(), "Uploads", "pdf");
         public Dictionary<string, iText.Kernel.Colors.Color> colors = new Dictionary<string, iText.Kernel.Colors.Color>()
         {
             {"Black", ColorConstants.BLACK},
@@ -78,7 +80,7 @@ namespace PDF_API.Models {
         }
 
         public static bool CanBeUpload(IFormFile file) {
-            string extention = Path.GetExtension(file.FileName);
+            string extention = System.IO.Path.GetExtension(file.FileName);
 
             if (!validExtensions.Contains(extention)) {
                 throw new PDFException("Extension is not valid");
@@ -94,11 +96,11 @@ namespace PDF_API.Models {
         }
 
         public string Upload(IFormFile file) {
-            string extention = Path.GetExtension(file.FileName);
+            string extention = System.IO.Path.GetExtension(file.FileName);
 
             string fileName = Guid.NewGuid().ToString() + extention;
 
-            using FileStream stream = new FileStream(Path.Combine(uploadFolder, fileName), FileMode.Create);
+            using FileStream stream = new FileStream(System.IO.Path.Combine(uploadFolder, fileName), FileMode.Create);
 
             file.CopyTo(stream);
 
@@ -112,11 +114,11 @@ namespace PDF_API.Models {
         }
 
         public string GetUploadPath(string fileName) {
-            return Path.Combine(uploadFolder, fileName);
+            return System.IO.Path.Combine(uploadFolder, fileName);
         }
 
         public string GetEditPath(string fileName) {
-            return Path.Combine(uploadFolder, "Edited" + fileName);
+            return System.IO.Path.Combine(uploadFolder, "Edited" + fileName);
         }
 
         public void Clear() {
@@ -131,7 +133,7 @@ namespace PDF_API.Models {
             }
         }
 
-        public bool DeletePage(int pageNumber) {
+        public void DeletePage(int pageNumber) {
             int[] pagesToDelete = { pageNumber };
 
             using (var pdfDocument = new PdfDocument(new PdfReader(inputFilePath1), new PdfWriter(outputFilePath))) {
@@ -145,11 +147,9 @@ namespace PDF_API.Models {
                     deleted++;
                 }
             }
-
-            return true;
         }
 
-        public bool SwapPages(int pageFromSwap, int pageToSwap) {
+        public void SwapPages(int pageFromSwap, int pageToSwap) {
             List<int> pages = new List<int>();
 
             using (var inputPdfDocument = new PdfDocument(new PdfReader(inputFilePath1))) {
@@ -169,11 +169,9 @@ namespace PDF_API.Models {
                     inputPdfDocument.CopyPagesTo(pages, outputPdfDocument);
                 }
             }
-
-            return true;
         }
 
-        public bool CombineFiles() {
+        public void CombineFiles() {
 
             if (countUploadedDocuments != 2) {
                 throw new PDFException("Incorrect number of documents uploaded.");
@@ -190,8 +188,6 @@ namespace PDF_API.Models {
                     inputPdfDocument2.CopyPagesTo(pages, outputPdfDocument);
                 }
             }
-
-            return true;
         }
 
         public void SplitFile(int breakPage) {
@@ -238,7 +234,7 @@ namespace PDF_API.Models {
 
                     ImageData imageData = ImageDataFactory.Create(image.GetPath());
 
-                    Image newImage = new Image(imageData).ScaleAbsolute(image.width, image.height).SetFixedPosition(pageNumberToInsert, x, pagePageSize.GetHeight() - y);
+                    var newImage = new iText.Layout.Element.Image(imageData).ScaleAbsolute(image.width, image.height).SetFixedPosition(pageNumberToInsert, x, pagePageSize.GetHeight() - y);
                     document.Add(newImage);
                 }
             }
@@ -291,11 +287,32 @@ namespace PDF_API.Models {
                 }
 
                 Paragraph paragraph = new Paragraph()
-                    .Add(new Text(text).AddStyle(style));
+                    .Add(new iText.Layout.Element.Text(text).AddStyle(style));
 
                 using (Document document = new Document(pdfDocument)) {
                     document.ShowTextAligned(paragraph, x, pagePageSize.GetHeight() - y, pageNumber, TextAlignment.LEFT, VerticalAlignment.TOP, 0);
                 }
+            }
+        }
+
+        public void CropPage(int pageNumber, int x, int y, float width, float height) {
+            using (var pdfDocument = new PdfDocument(new PdfReader(inputFilePath1), new PdfWriter(outputFilePath))) {
+                PdfPage page = pdfDocument.GetPage(pageNumber);
+                var pagePageSize = page.GetPageSize();
+
+                if (y < 0 || y > pagePageSize.GetHeight() || x < 0 || x > pagePageSize.GetWidth()) {
+                    throw new PDFException("The coordinates specified are outside the page.");
+                }
+                if (height < 0 || height > pagePageSize.GetHeight() || width < 0 || width > pagePageSize.GetWidth()) {
+                    throw new PDFException("Dimensions are beyond the page.");
+                }
+                if (pageNumber < 1 || pageNumber > pdfDocument.GetNumberOfPages()) {
+                    throw new PDFException("The page specified is outside the scope of the document.");
+                }
+
+                var cropBox = new iText.Kernel.Geom.Rectangle(x, y, width, height);
+
+                page.SetCropBox(cropBox);
             }
         }
     }

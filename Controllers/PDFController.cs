@@ -143,5 +143,22 @@ namespace PDF_API.Controllers {
                 return BadRequest(e.Message);
             }
         }
+
+        [HttpPost("CropPage")]
+        public ActionResult CropPage(IFormFile fileToUpload, int pageNumber, int x, int y, float width, float height) {
+            try {
+                var mypdf = new MyPDF(fileToUpload);
+
+                mypdf.CropPage(pageNumber, x, y, width, height);
+
+                byte[] fileBytes = System.IO.File.ReadAllBytes(mypdf.getOutputFilePath());
+                mypdf.Clear();
+
+                return File(fileBytes, "application/pdf", "returned.pdf");
+            }
+            catch (PDFException e) {
+                return BadRequest(e.Message);
+            }
+        }
     }
 }

@@ -7,6 +7,19 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Uploads\pdf\6f30ee57-11e8-480c-b11c-740502d05bbe.pdf" />
+    <None Remove="Uploads\pdf\80c82ddd-d607-43e1-bb53-66669dc911b7.pdf" />
+    <None Remove="Uploads\pdf\a0b1ea52-51a1-4e2e-b0e5-914225aa9b0f.pdf" />
+    <None Remove="Uploads\pdf\e653762b-f11e-4f25-9739-6077e356ab9a.pdf" />
+    <None Remove="Uploads\pdf\Edited6f30ee57-11e8-480c-b11c-740502d05bbe.pdf" />
+    <None Remove="Uploads\pdf\Edited80c82ddd-d607-43e1-bb53-66669dc911b7.pdf" />
+    <None Remove="Uploads\pdf\Editeda0b1ea52-51a1-4e2e-b0e5-914225aa9b0f.pdf" />
+    <None Remove="Uploads\pdf\Editede653762b-f11e-4f25-9739-6077e356ab9a.pdf" />
+    <None Remove="Uploads\pdf\Editedef1986f8-9c81-422e-bef4-62c122b85411.pdf" />
+    <None Remove="Uploads\pdf\ef1986f8-9c81-422e-bef4-62c122b85411.pdf" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="itext" Version="8.0.5" />
     <PackageReference Include="itext7.bouncy-castle-adapter" Version="8.0.5" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
