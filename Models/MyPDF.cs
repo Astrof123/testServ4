@@ -3,11 +3,10 @@ using iText.IO.Image;
 using iText.Kernel.Colors;
 using iText.Kernel.Font;
 using iText.Kernel.Pdf;
-using iText.Kernel.Pdf.Canvas;
 using iText.Layout;
 using iText.Layout.Element;
 using iText.Layout.Properties;
-using Microsoft.AspNetCore.Mvc.RazorPages;
+using System.Drawing;
 
 namespace PDF_API.Models {
     public class MyPDF {
@@ -19,6 +18,40 @@ namespace PDF_API.Models {
         public string outputFilePath;
         public int countUploadedDocuments;
         public static string uploadFolder = Path.Combine(Directory.GetCurrentDirectory(), "Uploads", "pdf");
+        public Dictionary<string, iText.Kernel.Colors.Color> colors = new Dictionary<string, iText.Kernel.Colors.Color>()
+        {
+            {"Black", ColorConstants.BLACK},
+            {"Blue", ColorConstants.BLUE},
+            {"Cyan", ColorConstants.CYAN},
+            {"Dark gray", ColorConstants.DARK_GRAY},
+            {"Gray", ColorConstants.GRAY},
+            {"Green", ColorConstants.GREEN},
+            {"Light gray", ColorConstants.LIGHT_GRAY},
+            {"Magenta", ColorConstants.MAGENTA},
+            {"Orange", ColorConstants.ORANGE},
+            {"Pink", ColorConstants.PINK},
+            {"Red", ColorConstants.RED},
+            {"White", ColorConstants.WHITE},
+            {"Yellow", ColorConstants.YELLOW},
+        };
+
+        public List<string> fonts = new List<string>()
+        {
+            "Courier", 
+            "Courier-Bold", 
+            "Courier-BoldOblique", 
+            "Courier-Oblique", 
+            "Helvetica", 
+            "Helvetica-Bold", 
+            "Helvetica-BoldOblique", 
+            "Helvetica-Oblique", 
+            "Symbol", 
+            "Times-Roman", 
+            "Times-Bold", 
+            "Times-BoldItalic", 
+            "Times-Italic", 
+            "ZapfDingbats"
+        };
 
         public MyPDF(IFormFile fileToUpload1) {
             CanBeUpload(fileToUpload1);
@@ -220,25 +253,48 @@ namespace PDF_API.Models {
             }
         }
 
-        public void AddText(int pageNumber, int x, int y) {
+        public void AddText(string text, int pageNumber, int x, int y, float FontSize, string font, bool isBold, string fontColor) {
             using (var pdfDocument = new PdfDocument(new PdfReader(inputFilePath1), new PdfWriter(outputFilePath))) {
-                PdfFont code = PdfFontFactory.CreateFont(StandardFonts.COURIER);
+                var pagePageSize = pdfDocument.GetPage(pageNumber).GetPageSize();
+
+                if (y < 0 || y > pagePageSize.GetHeight() || x < 0 || x > pagePageSize.GetWidth()) {
+                    throw new PDFException("The coordinates specified are outside the page.");
+                }
+
+                if (pageNumber < 1 || pageNumber > pdfDocument.GetNumberOfPages()) {
+                    throw new PDFException("The page specified is outside the scope of the document.");
+                }
+
+                PdfFont code;
+                if (fonts.Contains(font)) {
+                    code = PdfFontFactory.CreateFont(font);
+                }
+                else {
+                    throw new PDFException("The specified font was not found.");
+                }
+
+                iText.Kernel.Colors.Color color;
+                if (colors.ContainsKey(fontColor)) {
+                    color = colors[fontColor];
+                }
+                else {
+                    throw new PDFException("The specified font color was not found.");
+                }
 
                 Style style = new Style()
                     .SetFont(code)
-                    .SetFontSize(14)
-                    .SetFontColor(ColorConstants.RED)
-                    .SetBackgroundColor(ColorConstants.LIGHT_GRAY);
+                    .SetFontSize(FontSize)
+                    .SetFontColor(color);
+
+                if (isBold) {
+                    style.SetBold();
+                }
 
                 Paragraph paragraph = new Paragraph()
-                    .Add("In this example, named ")
-                    .Add(new Text("HelloWorldStyles").AddStyle(style))
-                    .Add(", we experiment with some text in ")
-                    .Add(new Text("code style").AddStyle(style))
-                    .Add(".");
+                    .Add(new Text(text).AddStyle(style));
 
                 using (Document document = new Document(pdfDocument)) {
-                    document.ShowTextAligned(paragraph, x, y, pageNumber, TextAlignment.LEFT, VerticalAlignment.BOTTOM, 0);
+                    document.ShowTextAligned(paragraph, x, pagePageSize.GetHeight() - y, pageNumber, TextAlignment.LEFT, VerticalAlignment.TOP, 0);
                 }
             }
         }

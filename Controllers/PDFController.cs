@@ -128,11 +128,11 @@ namespace PDF_API.Controllers {
 
 
         [HttpPost("AddText")]
-        public ActionResult AddText(IFormFile fileToUpload, int pageNumber, int x, int y) {
+        public ActionResult AddText(IFormFile fileToUpload, string text, int pageNumber, int x, int y, float FontSize = 12, string font = "Helvetica", bool isBold = false, string fontColor = "Black") {
             try {
                 var mypdf = new MyPDF(fileToUpload);
 
-                mypdf.AddText(pageNumber, x, y);
+                mypdf.AddText(text, pageNumber, x, y, FontSize, font, isBold, fontColor);
 
                 byte[] fileBytes = System.IO.File.ReadAllBytes(mypdf.getOutputFilePath());
                 mypdf.Clear();
